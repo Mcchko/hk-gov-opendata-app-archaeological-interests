@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>「香港具考古研究價值的地點」查詢系統</title>
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" />
+    <style>
+        .element-hidden {
+            display: none !important;
+        }
+
+        /* Reset & Base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #0f5132 0%, #198754 100%);
+            min-height: 100vh;
+            padding: 16px;
+            color: #1f2937;
+        }
+
+        /* Layout */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header h1 {
+            color: #111827;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #0f5132 0%, #198754 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-align: center;
+        }
+
+        .header .subtitle {
+            color: #6b7280;
+            font-size: 1rem;
+            line-height: 1.5;
+            text-align: center;
+        }
+
+        /* Form Section */
+        .form-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .btn {
+            padding: 12px 28px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #198754 0%, #0f5132 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #157347 0%, #0d4526 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(21, 115, 71, 0.3);
+        }
+
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #d1d5db;
+        }
+
+        .btn-secondary:hover {
+            background: #e5e7eb;
+            transform: translateY(-2px);
+        }
+
+        /* Main Content */
+        .main-content {
+            display: flex;
+            flex: 1;
+            gap: 20px;
+            height: 70vh;
+        }
+
+        .data-section {
+            flex: 0 0 400px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            overflow-y: auto;
+            max-height: 100%;
+        }
+
+        .map-section {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            padding: 0;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            overflow: hidden;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            border-radius: 16px;
+        }
+
+        /* Data Section Styles */
+        .data-header {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .data-header h2 {
+            color: #111827;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #0f5132 0%, #198754 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .data-header .subtitle {
+            color: #6b7280;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .data-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+            gap: 15px;
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #198754;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #6b7280;
+        }
+
+        .accordion-container {
+            margin-top: 20px;
+        }
+
+        .site-group {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            overflow: hidden;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .site-group:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .site-header {
+            background: linear-gradient(135deg, #198754 0%, #0f5132 100%);
+            color: white;
+            padding: 15px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .site-header.active {
+            background: linear-gradient(135deg, #0f5132 0%, #0a3622 100%);
+        }
+
+        .site-header i {
+            transition: transform 0.3s ease;
+        }
+
+        .site-header.collapsed i {
+            transform: rotate(-90deg);
+        }
+
+        .site-content {
+            background: white;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+        }
+
+        .site-content.expanded {
+            max-height: 300px;
+            padding: 5px;
+            overflow-y: auto;
+        }
+
+        .district-group {
+            margin-bottom: 20px;
+        }
+
+        .district-header {
+            background: #e9ecef;
+            padding: 12px 15px;
+            border-radius: 6px;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 10px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .district-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .district-content.expanded {
+            max-height: 1000px;
+            overflow-y: auto;
+        }
+
+        .site-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .site-item {
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 15px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .site-item:hover {
+            background: #e9ecef;
+            border-color: #198754;
+        }
+
+        .site-item.active {
+            background: #d1e7dd;
+            border-color: #198754;
+        }
+
+        .site-info {
+            margin-bottom: 10px;
+        }
+
+        .site-row {
+            display: flex;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .site-label {
+            font-weight: 600;
+            color: #374151;
+            width: 80px;
+            flex-shrink: 0;
+        }
+
+        .site-value {
+            flex: 1;
+            color: #6b7280;
+            word-break: break-word;
+        }
+
+        .site-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+
+        .badge-district {
+            background: #d1e7dd;
+            color: #0f5132;
+        }
+
+        .badge-archaeological {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-location {
+            background: #cfe2ff;
+            color: #084298;
+        }
+
+        .site-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px 20px;
+            color: #9ca3af;
+        }
+
+        .no-data i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6b7280;
+        }
+
+        .loading-spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #198754;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        .count-badge {
+            background: rgba(255, 255, 255, 0.2);
+            color: black;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.875rem;
+            padding: 20px;
+            margin-top: auto;
+        }
+
+        /* Notification */
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 3000;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .notification.success {
+            background-color: #198754;
+            color: white;
+        }
+
+        .notification.error {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .notification.info {
+            background-color: #0dcaf0;
+            color: white;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        /* Map popup styles */
+        .leaflet-popup-content {
+            font-family: 'Inter', sans-serif;
+            min-width: 200px;
+        }
+
+        .popup-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #0f5132;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #198754;
+            padding-bottom: 5px;
+        }
+
+        .popup-info {
+            margin-bottom: 8px;
+        }
+
+        .popup-label {
+            font-weight: 600;
+            color: #374151;
+            display: inline-block;
+            width: 80px;
+        }
+
+        .popup-value {
+            color: #6b7280;
+        }
+
+        /* Mobile Optimizations */
+        @media (max-width: 768px) {
+            body {
+                padding: 12px;
+                background: #0f5132;
+            }
+
+            .container {
+                gap: 16px;
+            }
+
+            .header {
+                padding: 16px;
+                border-radius: 12px;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .form-section {
+                padding: 20px;
+            }
+
+            .main-content {
+                flex-direction: column;
+                height: auto;
+            }
+
+            .data-section {
+                flex: none;
+                max-height: 400px;
+                padding: 15px;
+            }
+
+            .map-section {
+                height: 400px;
+            }
+
+            .data-header h2 {
+                font-size: 1.3rem;
+            }
+
+            .stat-value {
+                font-size: 1.5rem;
+            }
+
+            .site-info {
+                grid-template-columns: 1fr;
+            }
+
+            .site-row {
+                flex-direction: column;
+                margin-bottom: 12px;
+            }
+
+            .site-label {
+                width: 100%;
+                margin-bottom: 5px;
+            }
+
+            .site-header {
+                padding: 12px;
+                font-size: 0.9rem;
+            }
+
+            .btn {
+                padding: 10px 20px;
+                font-size: 0.9rem;
+            }
+
+            .district-content.expanded {
+                max-height: 500px;
+                overflow-y: auto;
+            }
+
+            #map {
+                min-height: 400px;
+            }
+
+            .data-stats {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+
+            .site-content.expanded {
+                max-height: fit-content;
+                overflow-y: hidden;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>「香港具考古研究價值的地點」查詢系統</h1>
+            <p class="subtitle">發展局考古遺址資料查詢系統</p>
+        </header>
+        <section class="form-section">
+            <div class="form-actions">
+                <button type="button" class="btn btn-primary" onclick="loadData()">
+                    <i class="fas fa-download"></i>
+                    載入考古地點資料
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="clearMap()">
+                    <i class="fas fa-trash"></i>
+                    清除地圖標記
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="showAllMarkers()">
+                    <i class="fas fa-map-marker-alt"></i>
+                    顯示所有地點
+                </button>
+            </div>
+        </section>
+        <main class="main-content">
+            <section class="data-section">
+                <div class="data-header">
+                    <h2>考古地點列表</h2>
+                    <p class="subtitle">按資料集 > 區域 > 名稱 > 地址分組</p>
+                </div>
+                <div class="data-stats">
+                    <div class="stat-item">
+                        <span id="total-sites" class="stat-value">0</span>
+                        <span class="stat-label">總地點數</span>
+                    </div>
+                    <div class="stat-item">
+                        <span id="total-districts" class="stat-value">0</span>
+                        <span class="stat-label">區域數量</span>
+                    </div>
+                    <div class="stat-item">
+                        <span id="total-datasets" class="stat-value">0</span>
+                        <span class="stat-label">資料集數</span>
+                    </div>
+                </div>
+                <div class="accordion-container" id="accordion-container">
+                    <div class="no-data">
+                        <i class="fas fa-archway"></i>
+                        <p>請點擊「載入考古地點資料」按鈕</p>
+                    </div>
+                </div>
+            </section>
+            <section class="map-section">
+                <div id="map"></div>
+            </section>
+        </main>
+        <footer class="footer">
+            <p>「香港具考古研究價值的地點」查詢系統<br />資料來源: 發展局<span id="last-updated" hidden></span></p>
+        </footer>
+    </div>
+    <script>
+        // 全局變量
+        let archaeologicalSites = [];
+        let map = null;
+        let markers = [];
+        let selectedSite = null;
+        let allMarkersLayer = null;
+
+        // 初始化應用
+        document.addEventListener('DOMContentLoaded', function () {
+            // 初始化地圖
+            initializeMap();
+            // 初始化IndexedDB
+            initIndexedDB();
+            // 更新最後更新時間
+            updateLastUpdatedTime();
+        });
+
+        // 初始化地圖
+        function initializeMap() {
+            // 設置香港為中心
+            map = L.map('map').setView([22.3193, 114.1694], 11);
+
+            // 添加OpenStreetMap圖層
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19,
+            }).addTo(map);
+
+            // 創建所有標記的圖層組
+            allMarkersLayer = L.layerGroup().addTo(map);
+        }
+
+        // 初始化IndexedDB
+        function initIndexedDB() {
+            const request = indexedDB.open('ArchaeologicalSitesDB', 1);
+
+            request.onupgradeneeded = function (event) {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains('sites')) {
+                    db.createObjectStore('sites', { keyPath: 'properties.OBJECTID' });
+                }
+            };
+
+            request.onsuccess = function (event) {
+                console.log('IndexedDB 初始化成功');
+            };
+
+            request.onerror = function (event) {
+                console.error('IndexedDB 初始化失敗:', event.target.error);
+            };
+        }
+
+        // 從IndexedDB獲取緩存數據
+        async function getCachedData() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('ArchaeologicalSitesDB', 1);
+
+                request.onsuccess = function (event) {
+                    const db = event.target.result;
+                    const transaction = db.transaction('sites', 'readonly');
+                    const store = transaction.objectStore('sites');
+                    const getAllRequest = store.getAll();
+
+                    getAllRequest.onsuccess = function () {
+                        resolve(getAllRequest.result);
+                    };
+
+                    getAllRequest.onerror = function () {
+                        reject(getAllRequest.error);
+                    };
+                };
+
+                request.onerror = function (event) {
+                    reject(event.target.error);
+                };
+            });
+        }
+
+        // 將數據存儲到IndexedDB
+        async function cacheData(data) {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('ArchaeologicalSitesDB', 1);
+
+                request.onsuccess = function (event) {
+                    const db = event.target.result;
+                    const transaction = db.transaction('sites', 'readwrite');
+                    const store = transaction.objectStore('sites');
+
+                    // 清除舊數據
+                    store.clear();
+
+                    // 存儲新數據
+                    data.forEach(site => {
+                        store.put(site);
+                    });
+
+                    transaction.oncomplete = function () {
+                        resolve();
+                    };
+
+                    transaction.onerror = function (event) {
+                        reject(event.target.error);
+                    };
+                };
+
+                request.onerror = function (event) {
+                    reject(event.target.error);
+                };
+            });
+        }
+
+        // 更新最後更新時間
+        function updateLastUpdatedTime() {
+            const now = new Date();
+            const formattedTime = now.toLocaleString('zh-HK', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+            document.getElementById('last-updated').textContent = formattedTime;
+        }
+
+        // 載入數據
+        async function loadData() {
+            const container = document.getElementById('accordion-container');
+            container.innerHTML = `
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>正在載入考古地點資料...</p>
+                </div>
+            `;
+
+            try {
+                // 首先嘗試從緩存獲取數據
+                const cachedData = await getCachedData();
+                if (cachedData && cachedData.length > 0) {
+                    console.log('使用緩存數據');
+                    archaeologicalSites = cachedData;
+                    processData(cachedData);
+                    showNotification(`已從緩存載入 ${cachedData.length} 個考古地點`, 'info');
+                    return;
+                }
+
+                // 如果沒有緩存數據，則從API獲取
+                const DATA_URL = 'https://portal.csdi.gov.hk/server/services/common/devb_wb_rcd_1666075478680_84061/MapServer/WFSServer?service=wfs&request=GetFeature&typenames=SBD_POINT_20250702_091540&outputFormat=geojson';
+
+                const response = await fetch(DATA_URL);
+
+                if (!response.ok) {
+                    throw new Error(`API請求失敗: ${response.status} ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                if (!data.features || !Array.isArray(data.features)) {
+                    throw new Error('API返回的數據格式不正確');
+                }
+
+                // 處理數據
+                archaeologicalSites = data.features;
+
+                // 緩存數據
+                await cacheData(archaeologicalSites);
+
+                // 處理並顯示數據
+                processData(archaeologicalSites);
+
+                // 在地圖上顯示所有標記
+                showAllMarkers();
+
+                showNotification(`成功載入 ${archaeologicalSites.length} 個考古地點`, 'success');
+
+            } catch (error) {
+                console.error('載入數據時出錯:', error);
+                container.innerHTML = `
+                    <div class="no-data">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>載入考古地點資料時出錯</p>
+                        <p style="font-size: 0.9rem; margin-top: 10px;">${error.message}</p>
+                        <p style="font-size: 0.8rem; margin-top: 5px; color: #666;">請檢查網絡連接後重試</p>
+                    </div>
+                `;
+                showNotification('載入數據時出錯，請稍後再試', 'error');
+            }
+        }
+
+        // 處理數據
+        function processData(data) {
+            // 統計數據
+            const districtsSet = new Set();
+            const datasetsSet = new Set();
+
+            data.forEach(site => {
+                const props = site.properties;
+                if (props.DISTRIC_TC) districtsSet.add(props.DISTRIC_TC);
+                if (props.DATASET_TC) datasetsSet.add(props.DATASET_TC);
+            });
+
+            document.getElementById('total-sites').textContent = data.length;
+            document.getElementById('total-districts').textContent = districtsSet.size;
+            document.getElementById('total-datasets').textContent = datasetsSet.size;
+
+            // 分組數據
+            const groupedData = {};
+            data.forEach(site => {
+                const props = site.properties;
+                const dataset = props.DATASET_TC || '未分類';
+                const district = props.DISTRIC_TC || '未指定區域';
+                const name = props.NAME_TC || props.NAME || '未命名';
+                const address = props.ADDRESS_TC || props.ADDRESS || '地址不詳';
+
+                if (!groupedData[dataset]) groupedData[dataset] = {};
+                if (!groupedData[dataset][district]) groupedData[dataset][district] = {};
+                if (!groupedData[dataset][district][name]) groupedData[dataset][district][name] = [];
+
+                groupedData[dataset][district][name].push({
+                    site: site,
+                    address: address,
+                    props: props
+                });
+            });
+
+            // 更新界面
+            updateSiteList(groupedData);
+        }
+
+        // 更新地點列表
+        // 在 updateSiteList 函數中修改 siteId 的生成方式
+        function updateSiteList(groupedData) {
+            const container = document.getElementById('accordion-container');
+
+            if (Object.keys(groupedData).length === 0) {
+                container.innerHTML = `
+            <div class="no-data">
+                <i class="fas fa-archway"></i>
+                <p>沒有找到考古地點資料</p>
+            </div>
+        `;
+                return;
+            }
+
+            let accordionHTML = '';
+            let datasetIndex = 0;
+
+            for (const [dataset, districts] of Object.entries(groupedData)) {
+                // 計算此資料集下的總地點數
+                let datasetSiteCount = 0;
+                for (const [district, sites] of Object.entries(districts)) {
+                    for (const [siteName, siteItems] of Object.entries(sites)) {
+                        datasetSiteCount += siteItems.length;
+                    }
+                }
+
+                accordionHTML += `
+            <div class="site-group" data-dataset="${dataset}">
+                <div class="site-header" onclick="toggleSiteGroup(${datasetIndex})">
+                    <div>
+                        <i class="fas fa-layer-group" style="margin-right: 8px;"></i>
+                        <span>${dataset}</span>
+                        <span class="count-badge">${datasetSiteCount}</span>
+                    </div>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <div id="site-group-${datasetIndex}" class="site-content">
+        `;
+
+                let districtIndex = 0;
+                for (const [district, sites] of Object.entries(districts)) {
+                    // 計算此區域下的總地點數
+                    let districtSiteCount = 0;
+                    for (const [siteName, siteItems] of Object.entries(sites)) {
+                        districtSiteCount += siteItems.length;
+                    }
+
+                    accordionHTML += `
+                <div class="district-group">
+                    <div class="district-header" onclick="toggleDistrictGroup(${datasetIndex}, ${districtIndex})">
+                        <div>
+                            <i class="fas fa-map-marker-alt" style="margin-right: 8px;"></i>
+                            <span>${district}</span>
+                            <span class="count-badge">${districtSiteCount}</span>
+                        </div>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div id="district-${datasetIndex}-${districtIndex}" class="district-content">
+                        <div class="site-list">
+            `;
+
+                    for (const [siteName, siteItems] of Object.entries(sites)) {
+                        siteItems.forEach((item, itemIndex) => {
+                            const props = item.props;
+                            // 使用 OBJECTID 作為唯一標識符，如果沒有則使用組合ID
+                            const uniqueId = props.OBJECTID || `${datasetIndex}-${districtIndex}-${siteName}-${itemIndex}`;
+                            const siteId = `site-${uniqueId}`;
+
+                            accordionHTML += `
+                        <div class="site-item" id="${siteId}" onclick="showSiteOnMap('${siteId}', ${JSON.stringify(item.site).replace(/"/g, '&quot;')})">
+                            <div class="site-info">
+                                <div class="site-row">
+                                    <div class="site-label">名稱:</div>
+                                    <div class="site-value">${siteName}</div>
+                                </div>
+                                <div class="site-row">
+                                    <div class="site-label">地址:</div>
+                                    <div class="site-value">${item.address}</div>
+                                </div>
+                                <div class="site-row">
+                                    <div class="site-label">檔案編號:</div>
+                                    <div class="site-value">${props.FILE_REF || props.FILEREF_TC || 'N/A'}</div>
+                                </div>
+                            </div>
+                            <div class="site-meta">
+                                <span class="site-badge badge-district">
+                                    <i class="fas fa-map" style="margin-right: 4px;"></i>
+                                    ${district}
+                                </span>
+                                <span class="site-badge badge-archaeological">
+                                    <i class="fas fa-history" style="margin-right: 4px;"></i>
+                                    ${props.ARCH_PD_TC || props.ARCH_PD || '年代不詳'}
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                        });
+                    }
+
+                    accordionHTML += `
+                        </div>
+                    </div>
+                </div>
+            `;
+                    districtIndex++;
+                }
+
+                accordionHTML += `
+                </div>
+            </div>
+        `;
+                datasetIndex++;
+            }
+
+            container.innerHTML = accordionHTML;
+        }
+
+        // 顯示地點在地圖上
+        function showSiteOnMap(siteId, siteData) {
+            // 清除之前的選擇
+            if (selectedSite) {
+                selectedSite.classList.remove('active');
+            }
+
+            // 設置當前選擇
+            selectedSite = document.getElementById(siteId);
+            selectedSite.classList.add('active');
+
+            // 清除地圖上的所有標記
+            clearMapMarkers();
+
+            // 獲取座標 - 修復座標順序問題
+            let lat, lng;
+            if (siteData.geometry && siteData.geometry.coordinates) {
+                const coords = siteData.geometry.coordinates;
+                // GeoJSON格式為[經度, 緯度]，但Leaflet需要[緯度, 經度]
+                if (Array.isArray(coords[0])) {
+                    // 如果是多邊形或多點
+                    [lng, lat] = coords[0];
+                } else {
+                    // 如果是點
+                    [lng, lat] = coords;
+                }
+            } else {
+                // 如果沒有座標數據，使用香港中心
+                lat = 22.3193;
+                lng = 114.1694;
+            }
+
+            // 創建標記
+            const marker = L.marker([lat, lng]).addTo(map);
+            markers.push(marker);
+
+            // 創建彈出窗口內容
+            const props = siteData.properties;
+            const popupContent = `
+                <div class="popup-title">${props.NAME_TC || props.NAME || '未命名'}</div>
+                <div class="popup-info">
+                    <span class="popup-label">地址:</span>
+                    <span class="popup-value">${props.ADDRESS_TC || props.ADDRESS || '地址不詳'}</span>
+                </div>
+                <div class="popup-info">
+                    <span class="popup-label">區域:</span>
+                    <span class="popup-value">${props.DISTRIC_TC || props.DISTRICT || '未指定'}</span>
+                </div>
+                <div class="popup-info">
+                    <span class="popup-label">檔案編號:</span>
+                    <span class="popup-value">${props.FILE_REF || props.FILEREF_TC || 'N/A'}</span>
+                </div>
+                <div class="popup-info">
+                    <span class="popup-label">考古時期:</span>
+                    <span class="popup-value">${props.ARCH_PD_TC || props.ARCH_PD || '年代不詳'}</span>
+                </div>
+                <div class="popup-info">
+                    <span class="popup-label">資料集:</span>
+                    <span class="popup-value">${props.DATASET_TC || props.DATASET || '未分類'}</span>
+                </div>
+                ${props.DETAIL_TC ? `<div class="popup-info">
+                    <span class="popup-label">詳細資料:</span>
+                    <span class="popup-value">
+                        <a href="${props.DETAIL_TC}"><u>中文網頁</u></a>
+                    </span>
+                </div>` : ''}
+            `;
+
+            // 綁定彈出窗口
+            marker.bindPopup(popupContent);
+
+            // 打開彈出窗口
+            marker.openPopup();
+
+            // 移動地圖中心到標記位置
+            map.setView([lat, lng], 15);
+        }
+
+        // 顯示所有標記
+        function showAllMarkers() {
+            // 清除現有標記
+            allMarkersLayer.clearLayers();
+
+            if (!archaeologicalSites || archaeologicalSites.length === 0) {
+                showNotification('請先載入數據', 'info');
+                return;
+            }
+
+            // 創建所有標記
+            const markerBounds = L.latLngBounds();
+
+            archaeologicalSites.forEach(site => {
+                if (site.geometry && site.geometry.coordinates) {
+                    let lat, lng;
+                    const coords = site.geometry.coordinates;
+
+                    // 處理座標格式
+                    if (Array.isArray(coords[0]) && Array.isArray(coords[0][0])) {
+                        // 多邊形或多點
+                        [lng, lat] = coords[0];
+                    } else if (Array.isArray(coords[0])) {
+                        // 可能是[經度, 緯度]數組
+                        [lng, lat] = coords[0];
+                    } else {
+                        // 單獨的值
+                        lng = coords[0] || 114.1694;
+                        lat = coords[1] || 22.3193;
+                    }
+
+                    // 確保有有效的座標
+                    if (lat && lng) {
+                        const marker = L.circleMarker([lat, lng], {
+                            radius: 6,
+                            fillColor: "#198754",
+                            color: "#0f5132",
+                            weight: 2,
+                            opacity: 1,
+                            fillOpacity: 0.7
+                        }).addTo(allMarkersLayer);
+
+                        // 添加彈出窗口
+                        const props = site.properties;
+                        const popupContent = `
+                            <div class="popup-title">${props.NAME_TC || props.NAME || '未命名'}</div>
+                            <div class="popup-info">
+                                <span class="popup-label">地址:</span>
+                                <span class="popup-value">${props.ADDRESS_TC || props.ADDRESS || '地址不詳'}</span>
+                            </div>
+                            <div class="popup-info">
+                                <span class="popup-label">區域:</span>
+                                <span class="popup-value">${props.DISTRIC_TC || props.DISTRICT || '未指定'}</span>
+                            </div>
+                        `;
+
+                        marker.bindPopup(popupContent);
+
+                        // 添加點擊事件
+                        marker.on('click', function () {
+                            // 找到對應的列表項目
+                            const siteItems = document.querySelectorAll('.site-item');
+                            siteItems.forEach(item => {
+                                item.classList.remove('active');
+                            });
+
+                            // 可以根據需要添加其他交互
+                        });
+
+                        // 擴展邊界
+                        markerBounds.extend([lat, lng]);
+                    }
+                }
+            });
+
+            // 調整地圖視圖以包含所有標記
+            if (markerBounds.isValid()) {
+                map.fitBounds(markerBounds, { padding: [50, 50] });
+            }
+
+            showNotification(`已在地圖上顯示 ${archaeologicalSites.length} 個考古地點`, 'success');
+        }
+
+        // 清除地圖標記
+        function clearMap() {
+            clearMapMarkers();
+            allMarkersLayer.clearLayers();
+            if (selectedSite) {
+                selectedSite.classList.remove('active');
+                selectedSite = null;
+            }
+            showNotification('已清除地圖標記', 'info');
+        }
+
+        // 清除地圖上的所有標記
+        function clearMapMarkers() {
+            markers.forEach(marker => {
+                map.removeLayer(marker);
+            });
+            markers = [];
+        }
+
+        // 切摺疊資料集群組
+        function toggleSiteGroup(index) {
+            const content = document.getElementById(`site-group-${index}`);
+            const header = content.previousElementSibling;
+            const icon = header.querySelector('.fa-chevron-down');
+
+            if (content.classList.contains('expanded')) {
+                content.classList.remove('expanded');
+                header.classList.remove('active');
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+            } else {
+                content.classList.add('expanded');
+                header.classList.add('active');
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+            }
+        }
+
+        // 切摺疊區域群組
+        function toggleDistrictGroup(datasetIndex, districtIndex) {
+            const content = document.getElementById(`district-${datasetIndex}-${districtIndex}`);
+            const header = content.previousElementSibling;
+            const icon = header.querySelector('.fa-chevron-down');
+
+            if (content.classList.contains('expanded')) {
+                content.classList.remove('expanded');
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+            } else {
+                content.classList.add('expanded');
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+            }
+        }
+
+        // 顯示通知
+        function showNotification(message, type = 'info') {
+            // 移除現有通知
+            const existingNotification = document.querySelector('.notification');
+            if (existingNotification) {
+                existingNotification.remove();
+            }
+
+            // 創建通知元素
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                <span>${message}</span>
+            `;
+
+            // 添加到文檔
+            document.body.appendChild(notification);
+
+            // 3秒後移除
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease-out';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // 初始化教程
+        if (!localStorage.getItem('archaeoTutorialShown')) {
+            setTimeout(() => {
+                alert("歡迎使用「香港具考古研究價值的地點」查詢系統！\n\n• 點擊「載入考古地點資料」按鈕獲取數據\n• 數據會緩存到本地，提高加載速度\n• 點擊左側列表中的地點可在地圖上顯示位置\n• 點擊地圖上的標記可查看詳細資訊\n• 使用「清除地圖標記」按鈕移除所有標記\n• 使用「顯示所有地點」按鈕在地圖上顯示所有考古地點");
+                localStorage.setItem('archaeoTutorialShown', 'true');
+            }, 1000);
+        }
+    </script>
+</body>
+
+</html>
